@@ -1,5 +1,5 @@
+import requests
 import json
-import os
 import sys
 
 SENSITIVE_KEYS = [
@@ -22,36 +22,35 @@ def find_sensitive_data(obj, path=""):
             found.extend(find_sensitive_data(item, new_path))
     return found
 
-def analyze_json_file(file_path):
+def analyze_url(url):
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        secrets = find_sensitive_data(data)
-        return secrets
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        return find_sensitive_data(data)
     except Exception as e:
-        print(f"Error parsing {file_path}: {e}")
+        print(f"Erreur avec l'URL {url} : {e}")
         return []
 
-def find_json_files_and_analyze(directory, output_file):
-    with open(output_file, 'w', encoding='utf-8') as out_f:
-        for root, _, files in os.walk(directory):
-            for file in files:
-                if file.endswith('.json'):
-                    path = os.path.join(root, file)
-                    secrets = analyze_json_file(path)
-                    if secrets:
-                        out_f.write(f"=== Sensitive data found in {path} ===\n")
-                        for secret_path, value in secrets:
-                            out_f.write(f"{secret_path} : {value}\n")
-                        out_f.write("\n")
+def analyze_urls_from_file(input_file, output_file):
+    with open(input_file, 'r') as f_in, open(output_file, 'w', encoding='utf-8') as f_out:
+        urls = [line.strip() for line in f_in if line.strip()]
+        for url in urls:
+            print(f"Analyse de {url} ...")
+            secrets = analyze_url(url)
+            if secrets:
+                f_out.write(f"=== Sensitive data found at {url} ===\n")
+                for path, value in secrets:
+                    f_out.write(f"{path} : {value}\n")
+                f_out.write("\n")
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        print(f"Usage: {sys.argv[0]} <directory_to_scan> <output_file.txt>")
+        print(f"Usage: {sys.argv[0]} urls.txt output_results.txt")
         sys.exit(1)
 
-    directory = sys.argv[1]
+    input_file = sys.argv[1]
     output_file = sys.argv[2]
 
-    find_json_files_and_analyze(directory, output_file)
-    print(f"Analysis done. Results saved in {output_file}")
+    analyze_urls_from_file(input_file, output_file)
+    print(f"Analyse terminée, résultats dans {output_file}")
