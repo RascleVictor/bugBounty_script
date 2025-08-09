@@ -13,7 +13,7 @@ OUTPUT_DIR="gf_results"
 mkdir -p "$OUTPUT_DIR"
 
 # Liste des patterns gf à utiliser
-PATTERNS=(xss sqli lfi ssrf redirect rce idor)
+PATTERNS=(xss sqli lfi ssrf redirect rce idor ssti jsvar)
 
 # Boucle sur chaque pattern
 for pattern in "${PATTERNS[@]}"; do
